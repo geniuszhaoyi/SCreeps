@@ -1,4 +1,7 @@
 var Stat = {
+    json: function(){
+        JSON.stringify(Memory)
+    },
     plus1: function(x){
         return (x + 1) % 10;
     },

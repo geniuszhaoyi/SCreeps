@@ -30,21 +30,16 @@ var roleBuilder = {
             }
         }else {
             var sources = creep.room.find(FIND_DROPPED_RESOURCES, {filter: (resource) => {
-                    return resource.amount >= 100;}
-                });
+                return resource.resourceType == RESOURCE_ENERGY && resource.amount >= 20;
+            }});
             if(sources.length > 0){
                 if(creep.pickup(sources[0]) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(sources[0]);
                 }
-            }else if(creep.room == Game.spawns.Spawn1.room){
+            }else{
                 var source = Game.getObjectById(Memory.rooms[creep.room.name].storage);
                 if(creep.withdraw(source, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(source);
-                }
-            }else{
-                var sources = creep.room.find(FIND_SOURCES);
-                if(creep.harvest(sources[0]) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(sources[0]);
                 }
             }
         }

@@ -1,5 +1,12 @@
 var roleDefender= {
-
+    alert: function(){
+        var target = Game.flags.FlagColony.pos.findClosestByRange(FIND_HOSTILE_CREEPS)
+        if(target){
+            Memory.rooms.W7N4.min_creeps_num.defender = 1;
+        }else{
+            Memory.rooms.W7N4.min_creeps_num.defender = 0;
+        }
+    },
     /** @param {Creep} creep **/
     run: function(creep) {
         var goal = false;
@@ -32,7 +39,7 @@ var roleDefender= {
             }
         }
         if(!goal){
-            creep.moveTo(Game.flags.FlagNR);
+            creep.moveTo(Game.flags.FlagColony);
         }
     }
 };

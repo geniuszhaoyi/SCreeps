@@ -6,11 +6,34 @@ var roleMinion = {
     },
     /** @param {Creep} creep **/
     run: function(creep) {
+        /*//creep.say(Game.flags.FlagColony.room)
+        if(creep.room != Game.flags.FlagColony.room){
+            creep.say('moving')
+            creep.memory.state = MINION_STATE_IDLE
+            creep.memory.target = undefined;
+            creep.moveTo(Game.flags.FlagColony);
+            return 
+        }*/
+        
+        if(creep.memory.report_pos){ 
+            var position = new RoomPosition(creep.memory.report_pos.x, creep.memory.report_pos.y, creep.memory.report_pos.roomName)
+            if(creep.pos.isEqualTo(position)){
+                creep.memory.report_pos = undefined;
+            }else{
+                creep.moveTo(position);
+                return;
+            }
+        }
+        
         var MINION_STATE_HARVESTING = 1;
         var MINION_STATE_WORKING= 2;
         var MINION_STATE_IDLE = undefined;
         
-        if(creep.memory.state != MINION_STATE_HARVESTING && creep.carry.energy <= 0){
+        if(creep.memory.state == MINION_STATE_IDLE){
+            creep.memory.state=MINION_STATE_HARVESTING;
+            creep.memory.target = undefined;
+            creep.say('harvesting');
+        }else if(creep.memory.state != MINION_STATE_HARVESTING && creep.carry.energy <= 0){
             creep.memory.state=MINION_STATE_HARVESTING;
             creep.memory.target = undefined;
             creep.say('harvesting');
@@ -42,7 +65,7 @@ var roleMinion = {
                         if(structure.structureType==STRUCTURE_WALL || structure.structureType==STRUCTURE_RAMPART)
                             return false; //structure.hits < Memory.settings.Max_Wall_hits * 0.1;
                         else 
-                            return structure.hits < structure.hitsMax * 0.5;
+                            return structure.structureType != STRUCTURE_CONTROLLER && structure.id != structure.hits < structure.hitsMax * 0.5;
                         }
                     });
                     targets.sort((a,b) => a.hits - b.hits);
@@ -59,9 +82,20 @@ var roleMinion = {
                         creep.memory.targetType="CONSTRUCTION"
                     }
                 }
-                if(creep.memory.target == undefined || creep.room.controller.ticksToDowngrade <= 3000){
+                if(creep.room.controller.level > 0 && (creep.memory.target == undefined || creep.room.controller.ticksToDowngrade <= 3000)){
                     creep.memory.target = creep.room.controller.id
                     creep.memory.targetType="CONTROLLER"
+                }
+                if(creep.memory.target == undefined){
+                    var targets = creep.room.find(FIND_STRUCTURES, {
+                        filter: (structure) => {
+                            return structure.structureType == STRUCTURE_CONTAINER && structure.store[RESOURCE_ENERGY] < structure.storeCapacity;
+                        }
+                    });
+                    if(targets.length > 0){
+                        creep.memory.target = targets[0].id;
+                        creep.memory.targetType="TRANSFER"; //Transfer to container
+                    }
                 }
             }
         }else if(creep.memory.state == MINION_STATE_HARVESTING){
@@ -73,11 +107,17 @@ var roleMinion = {
                     creep.memory.target=sources[0].id;
                     creep.memory.targetType="RESOURCE";
                 }else{
-                    var sources = creep.room.find(FIND_SOURCES);
-                    var source = roleMinion.random_pick(sources);
-                    if(source != undefined){
-                        creep.memory.target = source.id;
-                        creep.memory.targetType="SOURCE";
+                    var sources = creep.room.find(FIND_STRUCTURES, {filter: {structureType: STRUCTURE_CONTAINER}});
+                    if(sources.length > 0){
+                        creep.memory.target = sources[0].id;
+                        creep.memory.targetType="WITHDRAW";
+                    }else{
+                        var sources = creep.room.find(FIND_SOURCES);
+                        var source = Game.getObjectById("c44207728e621fc");
+                        if(source != undefined){
+                            creep.memory.target = source.id;
+                            creep.memory.targetType="SOURCE";
+                        }
                     }
                 }
             }
@@ -96,6 +136,9 @@ var roleMinion = {
                 case "TRANSFER":
                     ans=creep.transfer(target, RESOURCE_ENERGY);
                     break;
+                case "WITHDRAW":
+                    ans=creep.withdraw(target, RESOURCE_ENERGY);
+                    break;
                 case "CONSTRUCTION":
                     ans=creep.build(target);
                     break;
@@ -112,7 +155,7 @@ var roleMinion = {
             }else if(ans==ERR_NOT_IN_RANGE){
                 creep.moveTo(target);
             }else{
-                //creep.say(ans)
+                creep.say(ans)
                 creep.memory.target = undefined;
             }
         }else{

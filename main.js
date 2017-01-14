@@ -6,9 +6,10 @@ var roleMiner = require('role.miner');
 var roleTruck = require('role.truck');
 var roleMinion = require('role.minion');
 var roleDefender = require('role.defender');
+var roleRecall = require('role.recall');
+var roleCC = require('role.colonyClaimer')
 
 var mainRefill = require('main.refill');
-var mainNRC = require('main.newRoomController')
 
 var structLink = require('structure.link');
 var structTower = require('structure.tower');
@@ -23,9 +24,10 @@ module.exports.loop = function () {
     structTower.run(Game.getObjectById('090026351478a2c'));
     
     mainRefill.refill()
-    mainNRC.run();
-    
+
     structLink.run();
+    
+    roleDefender.alert();
     
     for(var name in Game.creeps) {
         var creep = Game.creeps[name];
@@ -53,8 +55,11 @@ module.exports.loop = function () {
         if(creep.memory.role == 'defender'){
             roleDefender.run(creep);
         }
-        if(creep.memory.role == 'builder_nr'){
-            creep.moveTo(Game.flags.FlagNR)
+        if(creep.memory.role == 'recall'){
+            roleRecall.run(creep);
+        }
+        if(creep.memory.role == 'colonyClaimer'){
+            roleCC.run(creep);
         }
     }
     
