@@ -28,8 +28,12 @@ var roleHarvester = {
         
         if(creep.memory.target==false){
             var source = Game.getObjectById(Memory.rooms[creep.room.name].harvester_source);
-            // if(source.store[RESOURCE_ENERGY]==0)
-            //     source = Game.getObjectById("fbe1c0abfaebdd3");
+            if(source.store[RESOURCE_ENERGY]==0)
+                source = creep.room.find(FIND_STRUCTURES, {
+                    filter: (structure) => {
+                        return (structure.structureType == STRUCTURE_STORAGE || structure.structureType == STRUCTURE_CONTAINER) &&
+                            structure.store[RESOURCE_ENERGY] > 0;
+                    }})[0];
             if(creep.withdraw(source, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(source);
             }

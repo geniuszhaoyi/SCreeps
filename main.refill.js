@@ -7,25 +7,31 @@ var mainRefill = {
             }
         }
         
-        var defender = _.filter(Game.creeps, (creep) => creep.room == Game.rooms['W7N4'] && creep.memory.role == 'defender');
-        if(defender.length <  Memory.rooms['W7N4'].min_creeps_num['defender']) {
-            var newName = Game.spawns['Spawn2'].createCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,HEAL], undefined, {role: "defender"});
-            if(!(newName<0)){
-                console.log('W7N4' + ", " + 'Spawn2' + ", defender, " + newName);
-                return;
+        //console.log(Memory.rooms['W7N4'].min_creeps_num['defender'])
+        if(Memory.rooms['W7N4'] && Memory.rooms['W7N4'].inactive != true){
+            var defender = _.filter(Game.creeps, (creep) => creep.room == Game.rooms['W7N4'] && creep.memory.role == 'defender');
+            if(defender.length <  Memory.rooms['W7N4'].min_creeps_num['defender']) {
+                var newName = Game.spawns['Spawn2'].createCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,HEAL], undefined, {role: "defender"});
+                if(!(newName<0)){
+                    console.log('W7N4' + ", " + 'Spawn2' + ", defender, " + newName);
+                    return;
+                }
             }
         }
         
         var building = {};
         
         for(room_name in Memory.rooms){
-            if(building[room_name] == true){      //Avoid problems and WTFs in multithreaded
+            var room = Memory.rooms[room_name];
+            var spawn_name = room.spawn_name;
+            
+            if(!(Memory.rooms[room_name] && Memory.rooms[room_name].inactive != true)){
+                continue;
+            }
+            if(building[spawn_name] == true){      //Avoid problems and WTFs in multithreaded
                 continue;
             }
             var room_building = true;
-            
-            var room = Memory.rooms[room_name];
-            var spawn_name = room.spawn_name;
             
             var harvesters = _.filter(Game.creeps, (creep) => creep.room == Game.rooms[room_name] && creep.memory.role == 'harvester');
             var upgraders = _.filter(Game.creeps, (creep) => creep.room == Game.rooms[room_name] && creep.memory.role == 'upgrader');
@@ -39,17 +45,18 @@ var mainRefill = {
             var miners = _.filter(Game.creeps, (creep) => creep.memory.spawn == spawn_name && creep.memory.role == 'miner' && creep.ticksToLive >= 75);
             var req_trucks = _.filter(Memory.managers.truck_manager, (m) => m.spawn == spawn_name && m.inactive != true);
             var trucks = _.filter(Game.creeps, (creep) => creep.memory.spawn == spawn_name && creep.memory.role == 'truck' && creep.ticksToLive >= 60);
-            if(false && spawn_name == 'Spawn1'){
-                console.log(req_trucks.length +' '+ trucks.length)
-                console.log(trucks)
+            var req_relays = _.filter(Memory.managers.relay_manager, (m) => m.spawn == spawn_name && m.inactive != true);
+            var relays = _.filter(Game.creeps, (creep) => creep.memory.spawn == spawn_name && creep.memory.role == 'relay' && creep.ticksToLive >= 60);
+            
+			
+			if(false && spawn_name == 'Spawn1'){
+                console.log(req_relays.length +' '+ relays.length)
+                console.log(relays)
             }
             
             if(harvesters.length < room.min_creeps_num['harvester']) {
                 var newName = Game.spawns[spawn_name].createCreep([CARRY,MOVE], undefined, {role: 'harvester'});
                 if(!(newName<0)) console.log(room_name + ", " + spawn_name + ", harvester, " + newName);
-            }else if(defender.length < room.min_creeps_num['defender']) {
-                var newName = Game.spawns[spawn_name].createCreep([TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,ATTACK,MOVE,HEAL], undefined, {role: "defender"});
-                if(!(newName<0)) console.log(room_name + ", " + spawn_name + ", defender, " + newName);
             }else if(miners.length < req_miners.length){
                 if(Game.spawns[spawn_name].canCreateCreep([WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY,CARRY,MOVE])==0){
                     for(tm in Memory.managers.miner_manager) if(Memory.managers.miner_manager[tm].spawn == spawn_name && Memory.managers.miner_manager[tm].inactive != true){
@@ -95,6 +102,28 @@ var mainRefill = {
                         }
                     }
                 }
+            }else if(relays.length < req_relays.length) {
+                if(Game.spawns[spawn_name].canCreateCreep([CARRY,CARRY,CARRY,MOVE])==0){
+                    for(tm in Memory.managers.relay_manager) if(Memory.managers.relay_manager[tm].spawn == spawn_name && Memory.managers.relay_manager[tm].inactive != true){
+                        creep=Game.creeps[Memory.managers.relay_manager[tm].driver]
+                        if(!creep || creep.ticksToLive < 60){
+                            var body = [CARRY,CARRY,CARRY,MOVE];
+                            if(Memory.managers.relay_manager[tm].body) body = Memory.managers.relay_manager[tm].body;
+                            var newName = Game.spawns[spawn_name].createCreep(body, undefined, {
+                                role: 'relay',
+                                link: Memory.managers.relay_manager[tm].link,
+                                storage: Memory.managers.relay_manager[tm].storage,
+                                spawn: Memory.managers.relay_manager[tm].spawn,
+                                transfer_source_type: RESOURCE_ENERGY //Memory.managers.relay_manager[tm].transfer_source_type
+                            });
+                            if(!(newName<0)){
+                                Memory.managers.relay_manager[tm].driver=newName;
+                                console.log(room_name + ", " + spawn_name + ", relay(" + Memory.managers.relay_manager[tm].tag + "), " + newName);
+                                break;
+                            }
+                        }
+                    }
+                }
             }else if(chargers.length < room.min_creeps_num['charger']) {
                 var newName = Game.spawns[spawn_name].createCreep([CARRY,CARRY,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'charger'});
                 if(!(newName<0)) console.log(room_name + ", " + spawn_name + ", charger, " + newName);
@@ -115,7 +144,7 @@ var mainRefill = {
             }
             
             if(room_building){
-                building[room_name] == true;
+                building[spawn_name] = true;
             }
         
         }

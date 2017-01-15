@@ -16,7 +16,7 @@ var structTower = {
                     var closestDamagedStructure = tower.pos.findClosestByRange(FIND_STRUCTURES, {
                         filter: (structure) => {
                             if(structure.structureType==STRUCTURE_WALL || structure.structureType==STRUCTURE_RAMPART)
-                                return structure.hits < Memory.settings.Max_Wall_hits;
+                                return structure.hits < Memory.rooms[tower.room.name].Max_Wall_hits;
                             else 
                                 return structure.hits < structure.hitsMax;
                         }

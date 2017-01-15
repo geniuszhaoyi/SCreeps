@@ -1,10 +1,12 @@
 var roleDefender= {
     alert: function(){
-        var target = Game.flags.FlagColony.pos.findClosestByRange(FIND_HOSTILE_CREEPS)
-        if(target){
-            Memory.rooms.W7N4.min_creeps_num.defender = 1;
-        }else{
-            Memory.rooms.W7N4.min_creeps_num.defender = 0;
+        if(Memory.rooms['W7N4'] && Memory.rooms['W7N4'].inactive != true){
+            var target = Game.flags.FlagColony.pos.findClosestByRange(FIND_HOSTILE_CREEPS)
+            if(target){
+                Memory.rooms.W7N4.min_creeps_num.defender = 1;
+            }else{
+                Memory.rooms.W7N4.min_creeps_num.defender = 0;
+            }
         }
     },
     /** @param {Creep} creep **/
@@ -21,7 +23,9 @@ var roleDefender= {
         }
         if(!goal){
             if(creep.hits < creep.hitsMax){
-                creep.heal(creep);
+                if(creep.heal(creep) == ERR_NOT_IN_RANGE){
+                    creep.moveTo(target);
+                }
                 goal=true;
             }
         }
@@ -39,7 +43,8 @@ var roleDefender= {
             }
         }
         if(!goal){
-            creep.moveTo(Game.flags.FlagColony);
+            var ans = creep.moveTo(Game.flags.FlagColony);
+            if(ans != OK) creep.say(ans);
         }
     }
 };

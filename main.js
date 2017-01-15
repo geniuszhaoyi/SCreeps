@@ -8,6 +8,7 @@ var roleMinion = require('role.minion');
 var roleDefender = require('role.defender');
 var roleRecall = require('role.recall');
 var roleCC = require('role.colonyClaimer')
+var roleRelay = require('role.relay');
 
 var mainRefill = require('main.refill');
 
@@ -61,6 +62,10 @@ module.exports.loop = function () {
         if(creep.memory.role == 'colonyClaimer'){
             roleCC.run(creep);
         }
+        if(creep.memory.role == 'relay'){
+            roleRelay.run(creep)
+        }
+        
     }
     
     stat.recording();
