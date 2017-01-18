@@ -7,32 +7,42 @@ var roleRelay= {
     run: function(creep) {
         var TRANSFER_SOURCE_TYPE = RESOURCE_ENERGY;
         if(creep.memory.transfer_source_type) TRANSFER_SOURCE_TYPE = creep.memory.transfer_source_type
-		
+        
 		var storage = Game.getObjectById(creep.memory.storage);
+		if(!creep.memory.storage) storage = Game.getObjectById(Memory.rooms[creep.room.name].storage)
 		var link = Game.getObjectById(creep.memory.link);
+		if(!creep.memory.link) link = Game.getObjectById(Memory.rooms[creep.room.name].link)
+		var terminal = Game.getObjectById(creep.memory.terminal);
+		if(!creep.memory.terminal) terminal = Game.getObjectById(Memory.rooms[creep.room.name].terminal)
 		
-		if(roleRelay.distance(creep.pos,storage.pos) > 1 || roleRelay.distance(creep.pos,link.pos) > 1){
+		if(roleRelay.distance(creep.pos,storage.pos) > 1 || roleRelay.distance(creep.pos,link.pos) > 1 || roleRelay.distance(creep.pos,terminal.pos) > 1){
 			var dx = [1,1,1,0,0,-1,-1,-1];
 			var dy = [1,0,-1,1,-1,1,0,-1];
 			var target=undefined;
 			for(var i=0;i<8;i+=1){
 				var x=storage.pos.x+dx[i];
 				var y=storage.pos.y+dy[i];
-				if(roleRelay.distance(link.pos,new RoomPosition(x,y,link.pos.roomName)) <= 1){
-					target = new RoomPosition(x,y,link.pos.roomName);
+				var new_position = new RoomPosition(x,y,link.pos.roomName);
+				if(roleRelay.distance(link.pos,new_position) <= 1 && roleRelay.distance(terminal.pos,new_position) <= 1){
+					target = new_position;
 					break;
 				}
 			}
 			creep.moveTo(target);
 		}else{
+		    var min_reserved_energy = 200000;
 			if(_.sum(creep.carry) < creep.carryCapacity){
-				if(link.energy >= link.energyCapacity * 0.94){
+			    if(link.energy >= link.energyCapacity * 0.8){
 					creep.withdraw(link, RESOURCE_ENERGY);
-				}else{
-					creep.withdraw(storage, RESOURCE_ENERGY);
-				}
+			    }else if(terminal.store[RESOURCE_ENERGY] > 0){
+			        creep.withdraw(terminal, RESOURCE_ENERGY);
+			    }else if(storage.store[RESOURCE_ENERGY] >= min_reserved_energy){
+			        creep.withdraw(storage, RESOURCE_ENERGY);
+			    }else{
+			        creep.withdraw(link, RESOURCE_ENERGY);
+			    }
 			}else{
-				if(link.energy < link.energyCapacity * 0.82){
+				if(storage.store[RESOURCE_ENERGY] >= min_reserved_energy && link.energy < link.energyCapacity * 0.5){
 					creep.transfer(link, RESOURCE_ENERGY);
 				}else{
 					creep.transfer(storage, RESOURCE_ENERGY);
@@ -40,36 +50,6 @@ var roleRelay= {
 			}
 		}
 		
-		/*
-        if(creep.ticksToLive < 60 && _.sum(creep.carry) == 0){
-            creep.say("retired")
-            if(Game.spawns[Memory.rooms[creep.room.name].spawn_name].recycleCreep(creep)==ERR_NOT_IN_RANGE){
-                creep.moveTo(Game.spawns[Memory.rooms[creep.room.name].spawn_name]);
-            }
-        }
-        else if(_.sum(creep.carry) < creep.carryCapacity) {
-            var sources = creep.room.find(FIND_DROPPED_RESOURCES, {filter: (resource) => {
-                return resource.resourceType == TRANSFER_SOURCE_TYPE && resource.amount >= 50
-            }});
-            if(sources.length > 0){
-                if(creep.pickup(sources[0]) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(sources[0]);
-                }
-            }else{
-                var source = Game.getObjectById(creep.memory.source);
-                if(creep.withdraw(source, TRANSFER_SOURCE_TYPE) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source);
-                }
-            }
-        }else{
-            var target = Game.getObjectById(creep.memory.target);
-            if(target.structureType == STRUCTURE_LINK && target.energy < target.energyCapacity * 0.5){
-                creep.moveTo(target);
-            }
-            if(creep.transfer(target, TRANSFER_SOURCE_TYPE) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
-            }
-        }*/
     }
 };
 

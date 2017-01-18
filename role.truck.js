@@ -7,8 +7,13 @@ var roleTruck = {
         
         if(creep.ticksToLive < 60 && _.sum(creep.carry) == 0){
             creep.say("retired")
-            if(Game.spawns[Memory.rooms[creep.room.name].spawn_name].recycleCreep(creep)==ERR_NOT_IN_RANGE){
-                creep.moveTo(Game.spawns[Memory.rooms[creep.room.name].spawn_name]);
+            if(Memory.rooms[creep.room.name]){
+                var target = Game.spawns[Memory.rooms[creep.room.name].spawn_name]
+            }else if(creep.memory.spawn){
+                var target = Game.spawns[creep.memory.spawn]
+            }
+            if(target && target.recycleCreep(creep)==ERR_NOT_IN_RANGE){
+                creep.moveTo(target);
             }
         }
         else if(_.sum(creep.carry) < creep.carryCapacity) {
